@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯光纪 - 东方潮流，光影新生</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts - Noto Sans SC (作为宋体风格) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(13, 17, 23, 0.5); /* Semi-transparent dark ink black background */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #F0F0F0; /* White scrollbar thumb */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D1D5DB; /* Lighter white on hover */
+        }
+
+        body {
+            font-family: 'Noto Serif SC', serif; /* Apply Songti style */
+            background-color: transparent; /* Body background transparent, let Canvas show */
+            color: #F0F0F0; /* Jade white text */
+            line-height: 1.6;
+        }
+
+        /* Ensure alternative text for failed image loading */
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Hide mobile menu, display by default on desktop */
+        #mobile-menu {
+            display: none;
+        }
+
+        /* Show mobile menu for small screens */
+        @media (max-width: 767px) {
+            #mobile-menu.active {
+                display: flex;
+            }
+        }
+
+        /* Hero section background animation effect - adjusted for Chinese style neon colors */
+        @keyframes neon-pulse {
+            0% { box-shadow: 0 0 5px #F0F0F0, 0 0 10px #F0F0F0, 0 0 15px #00BFA5; }
+            50% { box-shadow: 0 0 10px #F0F0F0, 0 0 20px #F0F0F0, 0 0 30px #00BFA5; }
+            100% { box-shadow: 0 0 5px #F0F0F0, 0 0 10px #F0F0F0, 0 0 15px #00BFA5; }
+        }
+
+        .hero-text-glow {
+            text-shadow: 0 0 10px #F0F0F0, 0 0 20px #00BFA5;
+        }
+
+        .hero-button-glow {
+            box-shadow: 0 0 10px #F0F0F0, 0 0 20px #00BFA5;
+            animation: neon-pulse 3s infinite alternate;
+        }
+
+        /* Three.js Canvas style - Full screen fixed background */
+        #hero-canvas {
+            position: fixed; /* Fixed position */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Viewport width */
+            height: 100vh; /* Viewport height */
+            display: block;
+            z-index: -1; /* Ensure it's below all content */
+        }
+
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Darker overlay for modals */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: rgba(0, 0, 0, 0.9); /* Slightly less transparent for content */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            position: relative;
+            border: 1px solid #00BFA5; /* Cyan-green border */
+        }
+
+        .modal.open .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #F0F0F0;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #00BFA5; /* Cyan-green on hover */
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <!-- Header navigation bar -->
+    <header class="bg-black bg-opacity-50 fixed w-full z-50 shadow-lg"> <!-- Semi-transparent black background -->
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <!-- Brand Logo/Name -->
+            <a href="#" class="text-3xl font-bold text-[#F0F0F0] hover:text-[#D1D5DB] transition duration-300 rounded-lg p-2">溯光纪</a>
+
+            <!-- Desktop navigation menu -->
+            <div class="hidden md:flex space-x-8">
+                <a href="#hero" class="text-gray-300 hover:text-[#F0F0F0] transition duration-300 text-lg font-semibold rounded-md px-3 py-2">首页</a>
+                <a href="#new-arrivals" class="text-gray-300 hover:text-[#F0F0F0] transition duration-300 text-lg font-semibold rounded-md px-3 py-2">新品速递</a>
+                <a href="#collections" class="text-gray-300 hover:text-[#F0F0F0] transition duration-300 text-lg font-semibold rounded-md px-3 py-2">系列</a>
+                <a href="#about" class="text-gray-300 hover:text-[#F0F0F0] transition duration-300 text-lg font-semibold rounded-md px-3 py-2">关于我们</a>
+                <a href="#contact" class="text-gray-300 hover:text-[#F0F0F0] transition duration-300 text-lg font-semibold rounded-md px-3 py-2">联系我们</a>
+            </div>
+
+            <!-- Mobile menu button and Cart Icon -->
+            <div class="flex items-center space-x-4">
+                <button id="cart-button" class="relative text-gray-300 hover:text-[#F0F0F0] focus:outline-none focus:ring-2 focus:ring-[#F0F0F0] rounded-md p-2 transition duration-300">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-[#00BFA5] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+                <button id="mobile-menu-button" class="md:hidden text-gray-300 hover:text-[#F0F0F0] focus:outline-none focus:ring-2 focus:ring-[#F0F0F0] rounded-md p-2 transition duration-300">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile menu (initially hidden) -->
+        <div id="mobile-menu" class="hidden flex-col items-center bg-black bg-opacity-70 py-4 md:hidden"> <!-- Semi-transparent black background -->
+            <a href="#hero" class="block text-gray-300 hover:text-[#F0F0F0] py-3 text-lg font-semibold w-full text-center border-b border-gray-700">首页</a>
+            <a href="#new-arrivals" class="block text-gray-300 hover:text-[#F0F0F0] py-3 text-lg font-semibold w-full text-center border-b border-gray-700">新品速递</a>
+            <a href="#collections" class="block text-gray-300 hover:text-[#F0F0F0] py-3 text-lg font-semibold w-full text-center border-b border-gray-700">系列</a>
+            <a href="#about" class="block text-gray-300 hover:text-[#F0F0F0] py-3 text-lg font-semibold w-full text-center border-b border-gray-700">关于我们</a>
+            <a href="#contact" class="block text-gray-300 hover:text-[#F0F0F0] py-3 text-lg font-semibold w-full text-center">联系我们</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero section - Brand film and slogan -->
+        <section id="hero" class="relative h-screen flex items-center justify-center text-center overflow-hidden pt-16">
+            <!-- Three.js Canvas will render 3D scene here -->
+            <canvas id="hero-canvas"></canvas>
+
+            <!-- Content directly on top of background -->
+            <div class="relative z-10 p-6 flex flex-col items-center justify-center">
+                <h1 class="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-4 hero-text-glow">
+                    溯光纪
+                </h1>
+                <p class="text-xl md:text-3xl text-[#F0F0F0] font-medium mb-8 hero-text-glow">
+                    东方潮流，光影新生。
+                </p>
+                <a href="#new-arrivals" class="inline-block bg-[#F0F0F0] hover:bg-[#D1D5DB] text-black font-bold py-4 px-8 rounded-full text-xl transition duration-300 transform hover:scale-105 hero-button-glow">
+                    探索新品
+                </a>
+            </div>
+        </section>
+
+        <!-- New Arrivals section -->
+        <section id="new-arrivals" class="py-20 bg-black bg-opacity-20"> <!-- Semi-transparent black background -->
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-bold text-center text-white mb-12">新品速递</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Product Card 1 -->
+                    <div class="product-card bg-black bg-opacity-30 rounded-xl overflow-hidden transform hover:scale-105 transition duration-300 border border-transparent hover:border-[#00BFA5]"
+                         data-product-id="1"
+                         data-product-name="东方印花潮流卫衣"
+                         data-product-price="399"
+                         data-product-description="这款卫衣将传统水墨画意境融入现代印花设计，采用高密度纯棉面料，触感柔软，版型宽松。独特的东方图腾在光影下若隐若现，彰显低调奢华的国潮风范。">
+                        <img id="product1-image" src="https://placehold.co/600x400/1A1A20/F0F0F0?text=Product+1" alt="溯光纪-东方印花卫衣" class="w-full h-64 object-cover cursor-pointer">
+                        <div class="p-6">
+                            <h3 class="text-2xl font-semibold text-white mb-2">东方印花潮流卫衣</h3>
+                            <p class="text-gray-300 mb-4">融合传统图案与现代剪裁，定义街头新风尚。</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[#F0F0F0] text-3xl font-bold">¥399</span>
+                                <button class="add-to-cart-btn bg-[#00BFA5] hover:bg-[#00A38E] text-white py-2 px-6 rounded-full text-lg transition duration-300 font-semibold">加入购物车</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Product Card 2 -->
+                    <div class="product-card bg-black bg-opacity-30 rounded-xl overflow-hidden transform hover:scale-105 transition duration-300 border border-transparent hover:border-[#00BFA5]"
+                         data-product-id="2"
+                         data-product-name="解构青铜纹理牛仔裤"
+                         data-product-price="499"
+                         data-product-description="以古老青铜器纹理为灵感，通过现代解构手法重塑经典。采用优质丹宁布料，经过特殊洗水工艺，呈现独特的肌理感。宽松直筒版型，兼具舒适与潮流，是街头穿搭的百搭单品。">
+                        <img id="product2-image" src="https://placehold.co/600x400/1A1A20/F0F0F0?text=Product+2" alt="溯光纪-青铜纹理牛仔" class="w-full h-64 object-cover cursor-pointer">
+                        <div class="p-6">
+                            <h3 class="text-2xl font-semibold text-white mb-2">解构青铜纹理牛仔裤</h3>
+                            <p class="text-gray-300 mb-4">独特纹理与拼接设计，彰显不羁个性。</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[#F0F0F0] text-3xl font-bold">¥499</span>
+                                <button class="add-to-cart-btn bg-[#00BFA5] hover:bg-[#00A38E] text-white py-2 px-6 rounded-full text-lg transition duration-300 font-semibold">加入购物车</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Product Card 3 -->
+                    <div class="product-card bg-black bg-opacity-30 rounded-xl overflow-hidden transform hover:scale-105 transition duration-300 border border-transparent hover:border-[#00BFA5]"
+                         data-product-id="3"
+                         data-product-name="国潮机能风夹克"
+                         data-product-price="799"
+                         data-product-description="融合中国传统服饰的廓形与现代机能面料，打造出这款兼具实用性与时尚感的夹克。多口袋设计，防风防水，是都市探索者的理想选择。背部刺绣图案灵感来源于东方神话，细节之处尽显匠心。">
+                        <img id="product3-image" src="https://placehold.co/600x400/1A1A20/F0F0F0?text=Product+3" alt="溯光纪-国潮机能夹克" class="w-full h-64 object-cover cursor-pointer">
+                        <div class="p-6">
+                            <h3 class="text-2xl font-semibold text-white mb-2">国潮机能风夹克</h3>
+                            <p class="text-gray-300 mb-4">功能性与东方元素结合，引领国潮穿搭。</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[#F0F0F0] text-3xl font-bold">¥799</span>
+                                <button class="add-to-cart-btn bg-[#00BFA5] hover:bg-[#00A38E] text-white py-2 px-6 rounded-full text-lg transition duration-300 font-semibold">加入购物车</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collections section -->
+        <section id="collections" class="py-20 bg-black bg-opacity-10"> <!-- More transparent black background -->
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-bold text-center text-white mb-12">探索系列</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Collection Card 1 -->
+                    <div class="relative rounded-xl overflow-hidden group bg-black bg-opacity-30 border border-transparent hover:border-[#F0F0F0]"> <!-- Semi-transparent black background -->
+                        <img id="collection1-image" src="https://placehold.co/800x500/0D1117/00BFA5?text=Collection+1" alt="溯光纪-东方幻境系列概念图" class="w-full h-96 object-cover transform group-hover:scale-105 transition duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div> <!-- Gradient background also adjusted to black -->
+                            <div class="relative z-10 p-8">
+                                <h3 class="text-4xl font-bold text-white mb-2">东方幻境</h3>
+                                <p class="text-gray-300 text-lg mb-4">穿梭于山水之间，感受古今交融。本系列灵感源自中国古典园林与未来科技的碰撞，打造超现实主义的穿搭体验。</p>
+                                <a href="#" class="inline-block bg-[#F0F0F0] hover:bg-[#D1D5DB] text-black py-3 px-6 rounded-full text-lg transition duration-300 transform hover:scale-105">查看系列</a>
+                            </div>
+                        </div>
+                    <!-- Collection Card 2 -->
+                    <div class="relative rounded-xl overflow-hidden group bg-black bg-opacity-30 border border-transparent hover:border-[#F0F0F0]"> <!-- Semi-transparent black background -->
+                        <img id="collection2-image" src="https://placehold.co/800x500/0D1117/00BFA5?text=Collection+2" alt="溯光纪-街头国潮能量系列概念图" class="w-full h-96 object-cover transform group-hover:scale-105 transition duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div> <!-- Gradient background also adjusted to black -->
+                            <div class="relative z-10 p-8">
+                                <h3 class="text-4xl font-bold text-white mb-2">街头国潮</h3>
+                                <p class="text-gray-300 text-lg mb-4">传统元素与街头艺术碰撞，释放无限活力。本系列将中国传统文化符号以大胆、前卫的方式融入街头服饰，展现新一代的文化自信。</p>
+                                <a href="#" class="inline-block bg-[#F0F0F0] hover:bg-[#D1D5DB] text-black py-3 px-6 rounded-full text-lg transition duration-300 transform hover:scale-105">查看系列</a>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Us section -->
+        <section id="about" class="py-20 bg-black bg-opacity-20"> <!-- Semi-transparent black background -->
+            <div class="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/2">
+                    <img id="about-image" src="https://placehold.co/800x600/1A1A20/00BFA5?text=About+Us" alt="溯光纪-东方美学与潮流品牌理念" class="rounded-xl w-full h-auto object-cover border border-[#F0F0F0]"> <!-- White border -->
+                </div>
+                <div class="md:w-1/2 text-center md:text-left">
+                    <h2 class="text-4xl font-bold text-white mb-6">关于溯光纪</h2>
+                    <p class="text-gray-300 text-lg mb-6">
+                        “溯光纪”是一个诞生于东方美学与未来潮流交汇点的服装品牌。我们深信，在历史的沉淀中，蕴藏着无尽的光芒与灵感，等待被现代潮流所“溯”回，并以全新的姿态“纪”录下来。我们致力于将中国传统文化中的精髓元素，如水墨意境、古典纹样、哲学思想等，通过创新的设计手法、高科技面料与精湛的工艺，融入现代街头服饰。
+                    </p>
+                    <p class="text-300 text-lg mb-6">
+                        我们的每一件作品，都不仅仅是一件潮流单品，更是一种文化符号，一种对过去与未来的对话。它为追求个性、热爱探索、敢于表达自我的都市青年提供独特的穿搭选择，让他们在穿着中展现独一无二的光芒，成为新时代的文化引领者。
+                    </p>
+                    <p class="text-gray-300 text-lg">
+                        溯光纪，不只是一种穿搭，更是一种态度，一种生活方式。我们邀请您一同踏上这场光影之旅，共同定义属于我们的潮流纪元。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Block -->
+        <section id="cta" class="py-20 bg-black bg-opacity-70 text-white text-center"> <!-- Semi-transparent black background -->
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-bold mb-6">加入溯光纪，定义你的潮流</h2>
+                <p class="text-xl mb-8">立即订阅我们的邮件列表，获取最新资讯和独家优惠！</p>
+                <form class="max-w-xl mx-auto flex flex-col sm:flex-row gap-4">
+                    <input type="email" placeholder="输入您的邮箱地址" class="flex-grow p-4 rounded-full bg-black bg-opacity-80 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-[#00BFA5]"> <!-- Semi-transparent black background -->
+                    <button type="submit" class="bg-[#00BFA5] hover:bg-[#00A38E] text-white font-bold py-4 px-8 rounded-full text-xl transition duration-300 transform hover:scale-105">
+                        立即订阅
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer information -->
+    <footer id="contact" class="bg-black bg-opacity-50 py-12 text-gray-400 text-center"> <!-- Semi-transparent black background -->
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                <div class="mb-6 md:mb-0">
+                    <h3 class="text-2xl font-bold text-white mb-4">联系我们</h3>
+                    <p>邮箱: info@suguangji.com</p>
+                    <p>电话: 18718613487</p>
+                    <p>地址: 潮流街123号，未来城</p>
+                </div>
+                <div class="mb-6 md:mb-0">
+                    <h3 class="text-2xl font-bold text-white mb-4">关注我们</h3>
+                    <div class="flex justify-center space-x-6">
+                        <a href="#" class="text-gray-400 hover:text-[#F0F0F0] transition duration-300">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33V22C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-[#F0F0F0] transition duration-300">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.104.047 5.403.34 7.055 2.016 7.399 7.399.034.32.047.673.047 3.104s-.013 2.784-.047 3.104c-.344 5.383-2.016 7.055-7.399 7.399-.32.034-.673.047-3.104.047s-2.784-.013-3.104-.047c-5.383-.344-7.055-2.016-7.399-7.399-.034-.32-.047-.673-.047-3.104s.013-2.784.047-3.104c.344-5.383 2.016-7.055 7.399-7.399.32-.034.673-.047 3.104-.047zM12 21.315c3.074 0 3.484-.013 3.79-.047 4.043-.26 4.965-1.12 5.225-5.225.034-.306.047-.716.047-3.79s-.013-3.484-.047-3.79c-.26-4.105-1.182-5.027-5.225-5.225-.306-.034-.716-.047-3.79-.047s-3.484.013-3.79.047c-4.105.26-5.027 1.182-5.225 5.225.306.034.716.047 3.79.047zm0-16a6.315 6.315 0 100 12.63 6.315 6.315 0 000-12.63zm0 10.315a4 4 0 110-8 4 4 0 010 8zm6.5-11.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-[#F0F0F0] transition duration-300">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M.057 2.054a11.107 11.107 0 011.644-1.643C3.063.155 4.542 0 6.002 0h12c1.46 0 2.939.155 4.301.411a11.107 11.107 0 011.644 1.643c.256.49.411.969.411 1.448v12c0 1.46-.155 2.939-.411 4.301a11.107 11.107 0 01-1.643 1.644c-.49.256-.969.411-1.448.411H6.002c-1.46 0-2.939-.155-4.301-.411a11.107 11.107 0 01-1.644-1.644c-.256-.49-.411-.969-.411-1.448V6.002c0-1.46.155-2.939.411-4.301zM12 5.5c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5-2.91-6.5-6.5-6.5zm0 11c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5zm6.5-11.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <p class="text-sm">&copy; 2025 溯光纪. 保留所有权利。</p>
+        </div>
+    </footer>
+
+    <!-- Product Detail Modal -->
+    <div id="product-detail-modal" class="modal">
+        <div class="modal-content max-w-2xl w-full mx-auto">
+            <span class="close-button" id="close-product-detail-modal">&times;</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <img id="modal-product-image" src="https://placehold.co/600x400/1A1A20/F0F0F0?text=Product+Detail" alt="Product Image" class="w-full h-auto rounded-lg mb-4 border border-[#00BFA5]">
+                    <div class="flex space-x-2">
+                        <!-- Static thumbnails -->
+                        <img id="modal-thumbnail-1" src="https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+1" class="w-20 h-20 object-cover rounded-md border border-gray-700 cursor-pointer hover:border-[#00BFA5] transition" alt="Thumbnail 1">
+                        <img id="modal-thumbnail-2" src="https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+2" class="w-20 h-20 object-cover rounded-md border border-gray-700 cursor-pointer hover:border-[#00BFA5] transition" alt="Thumbnail 2">
+                        <img id="modal-thumbnail-3" src="https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+3" class="w-20 h-20 object-cover rounded-md border border-gray-700 cursor-pointer hover:border-[#00BFA5] transition" alt="Thumbnail 3">
+                    </div>
+                </div>
+                <div>
+                    <h3 id="modal-product-name" class="text-3xl font-bold text-white mb-4"></h3>
+                    <p class="text-gray-300 text-lg mb-4">
+                        <strong class="text-[#00BFA5]">描述：</strong> <span id="modal-product-description"></span>
+                    </p>
+                    <p class="text-gray-300 text-lg mb-4">
+                        <strong class="text-[#00BFA5]">材质：</strong> 高级棉混纺，舒适透气，垂坠感极佳。
+                    </p>
+                    <p class="text-gray-300 text-lg mb-4">
+                        <strong class="text-[#00BFA5]">尺码：</strong>
+                        <select id="product-size-select" class="bg-gray-800 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#00BFA5]">
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                        </select>
+                    </p>
+                    <p class="text-gray-300 text-lg mb-4">
+                        <strong class="text-[#00BFA5]">颜色：</strong>
+                        <select id="product-color-select" class="bg-gray-800 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#00BFA5]">
+                            <option value="Black">墨黑</option>
+                            <option value="White">玉白</option>
+                            <option value="Red">朱红</option>
+                        </select>
+                    </p>
+                    <div class="flex items-center justify-between mt-6">
+                        <span id="modal-product-price" class="text-[#F0F0F0] text-4xl font-bold"></span>
+                        <button id="add-to-cart-modal-btn" class="bg-[#00BFA5] hover:bg-[#00A38E] text-white py-3 px-8 rounded-full text-xl transition duration-300 font-semibold">加入购物车</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shopping Cart Modal -->
+    <div id="cart-modal" class="modal">
+        <div class="modal-content max-w-3xl w-full mx-auto">
+            <span class="close-button" id="close-cart-modal">&times;</span>
+            <h3 class="text-3xl font-bold text-center text-white mb-6">我的购物车</h3>
+            <div id="cart-items-container" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                <!-- Cart items will be dynamically added here -->
+                <p class="text-gray-400 text-center" id="empty-cart-message">购物车是空的。</p>
+            </div>
+            <div class="mt-8 pt-4 border-t border-gray-700 flex justify-between items-center">
+                <span class="text-xl font-bold text-white">总计：<span id="cart-total" class="text-[#00BFA5]">¥0</span></span>
+                <button id="checkout-btn" class="bg-[#F0F0F0] hover:bg-[#D1D5DB] text-black py-3 px-8 rounded-full text-xl transition duration-300 font-semibold">前往结算</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Mobile menu toggle logic
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const navLinks = document.querySelectorAll('#mobile-menu a');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+        });
+
+        // Close mobile menu after clicking on a menu item
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('active');
+            });
+        });
+
+        // Smooth scroll effect
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Three.js scene setup
+        let scene, camera, renderer, particles;
+        let mouseX = 0, mouseY = 0; // For mouse control of camera
+
+        // Initialize Three.js scene
+        function initThreeJS() {
+            const canvas = document.getElementById('hero-canvas');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Create scene
+            scene = new THREE.Scene();
+            // Fog effect, enhances depth of field, color matches background color
+            scene.fog = new THREE.Fog(0x0D1117, 1, 1000); 
+
+            // Create perspective camera
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.z = 50; // Move camera slightly back to observe depth of field effect
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio); // Optimize for high DPI screens
+            // Fix: Set Three.js renderer clear color to avoid white background
+            renderer.setClearColor(0x0D1117, 1); // Set to dark ink black, fully opaque
+
+            // Create particle system (simulating ink wash or light dots)
+            const particleCount = 1500; // Increase particle count to enhance depth of field effect
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+
+            // Define Chinese style colors
+            const color1 = new THREE.Color(0xF0F0F0); // White
+            const color2 = new THREE.Color(0x00BFA5); // Cyan-green
+            const color3 = new THREE.Color(0xD1D5DB); // Light gray for subtle variations
+
+            for (let i = 0; i < particleCount; i++) {
+                // Random position, simulating depth of field
+                positions.push(
+                    (Math.random() - 0.5) * 2000, // x, expand range
+                    (Math.random() - 0.5) * 2000, // y, expand range
+                    (Math.random() - 0.5) * 2000  // z, expand range
+                );
+
+                // Random color
+                const mixedColor = new THREE.Color();
+                mixedColor.setRGB(
+                    (color1.r + color2.r + color3.r) / 3 + (Math.random() - 0.5) * 0.2,
+                    (color1.g + color2.g + color3.g) / 3 + (Math.random() - 0.5) * 0.2,
+                    (color1.b + color2.b + color3.b) / 3 + (Math.random() - 0.5) * 0.2
+                );
+                colors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            // Create material
+            const material = new THREE.PointsMaterial({
+                size: 2, // Particle size
+                vertexColors: true, // Use vertex colors
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending, // Additive blending mode, enhances glow effect
+                sizeAttenuation: true // Particle size attenuates with distance
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft ambient light
+            scene.add(ambientLight);
+
+            // Add point lights, simulating light and shadow
+            const pointLight1 = new THREE.PointLight(0xF0F0F0, 1, 500); // White light
+            pointLight1.position.set(100, 100, 100);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0x00BFA5, 1, 500); // Cyan-green light
+            pointLight2.position.set(-100, -100, -100);
+            scene.add(pointLight2);
+
+            // Mouse interaction
+            document.addEventListener('mousemove', onDocumentMouseMove, false);
+            window.addEventListener('resize', onWindowResize, false);
+
+            animateThreeJS(); // Start animation loop
+        }
+
+        // Window resize handler
+        function onWindowResize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // Mouse move handler
+        function onDocumentMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2);
+            mouseY = (event.clientY - window.innerHeight / 2);
+        }
+
+        // Animation loop
+        function animateThreeJS() {
+            requestAnimationFrame(animateThreeJS);
+
+            // Particles move and rotate slowly, simulating ink flow
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.0008;
+            particles.position.x += Math.sin(Date.now() * 0.00005) * 0.1;
+            particles.position.y += Math.cos(Date.now() * 0.00005) * 0.1;
+
+            // Camera follows mouse movement, creating depth and dynamism
+            camera.position.x += (mouseX * 0.005 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.005 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position); // Ensure camera always looks at scene center
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Removed AI Image Generation Logic ---
+        // The generateAndSetImage function and related API calls have been removed.
+
+        // --- Product Detail Modal and Shopping Cart Logic ---
+
+        const productDetailModal = document.getElementById('product-detail-modal');
+        const closeProductDetailModalBtn = document.getElementById('close-product-detail-modal');
+        const productCards = document.querySelectorAll('.product-card');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalProductImage = document.getElementById('modal-product-image'); // This is the img tag inside the modal
+        const modalProductDescription = document.getElementById('modal-product-description');
+        const modalProductPrice = document.getElementById('modal-product-price');
+        const addToCartModalBtn = document.getElementById('add-to-cart-modal-btn');
+
+        // Get thumbnail image elements
+        const modalThumbnail1 = document.getElementById('modal-thumbnail-1');
+        const modalThumbnail2 = document.getElementById('modal-thumbnail-2');
+        const modalThumbnail3 = document.getElementById('modal-thumbnail-3');
+
+
+        const cartModal = document.getElementById('cart-modal');
+        const closeCartModalBtn = document.getElementById('close-cart-modal');
+        const cartButton = document.getElementById('cart-button');
+        const cartCount = document.getElementById('cart-count');
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartTotalSpan = document.getElementById('cart-total');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+        const checkoutBtn = document.getElementById('checkout-btn');
+
+        let cart = []; // Global array to store cart items
+
+        // Helper function to introduce a delay (no longer strictly needed for AI, but kept if other async ops arise)
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Open Product Detail Modal
+        productCards.forEach(card => {
+            card.addEventListener('click', (event) => { // No longer async as no AI generation here
+                // Prevent opening modal if clicking the "Add to Cart" button directly
+                if (event.target.classList.contains('add-to-cart-btn')) {
+                    return;
+                }
+
+                const productId = card.dataset.productId;
+                const productName = card.dataset.productName;
+                const productPrice = card.dataset.productPrice;
+                const productDescription = card.dataset.productDescription;
+                // No AI image prompt data needed anymore
+
+                modalProductName.textContent = productName;
+                modalProductDescription.textContent = productDescription;
+                modalProductPrice.textContent = `¥${productPrice}`;
+                
+                // Set static placeholder images for modal
+                modalProductImage.src = `https://placehold.co/600x400/1A1A20/F0F0F0?text=${productName.replace(/\s/g, '+')}`;
+                modalThumbnail1.src = `https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+1`;
+                modalThumbnail2.src = `https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+2`;
+                modalThumbnail3.src = `https://placehold.co/100x100/1A1A20/F0F0F0?text=Thumb+3`;
+
+                // Store product data on the button for adding to cart from modal
+                addToCartModalBtn.dataset.productId = productId;
+                addToCartModalBtn.dataset.productName = productName;
+                addToCartModalBtn.dataset.productPrice = productPrice;
+
+                productDetailModal.classList.add('open');
+            });
+        });
+
+        // Close Product Detail Modal
+        closeProductDetailModalBtn.addEventListener('click', () => {
+            productDetailModal.classList.remove('open');
+        });
+
+        // Add to Cart from Product Card
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const card = event.target.closest('.product-card');
+                const productId = card.dataset.productId;
+                const productName = card.dataset.productName;
+                const productPrice = parseFloat(card.dataset.productPrice);
+                addItemToCart(productId, productName, productPrice);
+            });
+        });
+
+        // Add to Cart from Product Detail Modal
+        addToCartModalBtn.addEventListener('click', () => {
+            const productId = addToCartModalBtn.dataset.productId;
+            const productName = addToCartModalBtn.dataset.productName;
+            const productPrice = parseFloat(addToCartModalBtn.dataset.productPrice);
+            addItemToCart(productId, productName, productPrice);
+            productDetailModal.classList.remove('open'); // Close modal after adding to cart
+        });
+
+        // Add item to cart logic
+        function addItemToCart(id, name, price) {
+            const existingItem = cart.find(item => item.id === id);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+            updateCartUI();
+            console.log('Cart:', cart); // For debugging
+        }
+
+        // Update Cart UI (count and total)
+        function updateCartUI() {
+            let totalItems = 0;
+            let totalPrice = 0;
+            cart.forEach(item => {
+                totalItems += item.quantity;
+                totalPrice += item.quantity * item.price;
+            });
+            cartCount.textContent = totalItems;
+            cartTotalSpan.textContent = `¥${totalPrice.toFixed(2)}`;
+
+            renderCartItems(); // Re-render cart items in modal
+        }
+
+        // Render Cart Items in Cart Modal
+        function renderCartItems() {
+            cartItemsContainer.innerHTML = ''; // Clear previous items
+            if (cart.length === 0) {
+                emptyCartMessage.style.display = 'block';
+            } else {
+                emptyCartMessage.style.display = 'none';
+                cart.forEach(item => {
+                    const cartItemDiv = document.createElement('div');
+                    cartItemDiv.classList.add('flex', 'items-center', 'justify-between', 'bg-black', 'bg-opacity-40', 'p-4', 'rounded-lg', 'border', 'border-gray-700');
+                    cartItemDiv.innerHTML = `
+                        <div class="flex-1">
+                            <h4 class="text-xl font-semibold text-white">${item.name}</h4>
+                            <p class="text-gray-400">¥${item.price.toFixed(2)} x ${item.quantity}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="update-quantity-btn bg-gray-700 hover:bg-gray-600 text-white w-8 h-8 rounded-full flex items-center justify-center" data-id="${item.id}" data-action="decrease">-</button>
+                            <span class="text-white">${item.quantity}</span>
+                            <button class="update-quantity-btn bg-gray-700 hover:bg-gray-600 text-white w-8 h-8 rounded-full flex items-center justify-center" data-id="${item.id}" data-action="increase">+</button>
+                            <button class="remove-item-btn bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded-full text-sm transition" data-id="${item.id}">移除</button>
+                        </div>
+                    `;
+                    cartItemsContainer.appendChild(cartItemDiv);
+                });
+
+                // Add event listeners for quantity update and remove buttons
+                cartItemsContainer.querySelectorAll('.update-quantity-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const id = event.target.dataset.id;
+                        const action = event.target.dataset.action;
+                        updateItemQuantity(id, action);
+                    });
+                });
+
+                cartItemsContainer.querySelectorAll('.remove-item-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const id = event.target.dataset.id;
+                        removeItemFromCart(id);
+                    });
+                });
+            }
+        }
+
+        // Update item quantity in cart
+        function updateItemQuantity(id, action) {
+            const itemIndex = cart.findIndex(item => item.id === id);
+            if (itemIndex > -1) {
+                if (action === 'increase') {
+                    cart[itemIndex].quantity++;
+                } else if (action === 'decrease') {
+                    cart[itemIndex].quantity--;
+                    if (cart[itemIndex].quantity <= 0) {
+                        cart.splice(itemIndex, 1); // Remove if quantity is 0 or less
+                    }
+                }
+                updateCartUI();
+            }
+        }
+
+        // Remove item from cart
+        function removeItemFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+        }
+
+        // Open Cart Modal
+        cartButton.addEventListener('click', () => {
+            renderCartItems(); // Ensure cart items are rendered when modal opens
+            cartModal.classList.add('open');
+        });
+
+        // Close Cart Modal
+        closeCartModalBtn.addEventListener('click', () => {
+            cartModal.classList.remove('open');
+        });
+
+        // Checkout button (placeholder)
+        checkoutBtn.addEventListener('click', () => {
+            alert('前往结算页面 (此为占位功能)');
+            // In a real application, this would redirect to a checkout page or trigger a payment process.
+            cart = []; // Clear cart after "checkout"
+            updateCartUI();
+            cartModal.classList.remove('open');
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === productDetailModal) {
+                productDetailModal.classList.remove('open');
+            }
+            if (event.target === cartModal) {
+                cartModal.classList.remove('open');
+            }
+        });
+
+        // Ensure Three.js initializes and then update cart UI
+        window.onload = async function () {
+            initThreeJS(); // Initialize Three.js first
+            // No AI image generation calls here anymore
+            updateCartUI(); // Initialize cart UI on load
+        };
+    </script>
+</body>
+</html>
